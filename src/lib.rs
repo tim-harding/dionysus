@@ -1,3 +1,5 @@
+pub mod console;
+
 #[cfg(test)]
 pub mod tests {
     use wasm_bindgen_test::*;
