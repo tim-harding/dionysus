@@ -1,4 +1,6 @@
 pub mod console;
+pub mod signal;
+pub mod slot_map;
 
 #[cfg(test)]
 pub mod tests {
