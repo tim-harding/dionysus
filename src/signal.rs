@@ -69,7 +69,7 @@ impl Future for Effect {
     }
 }
 
-pub fn create_effect(callback: impl FnMut()) {
+pub fn create_effect(mut callback: impl FnMut() + 'static) {
     future_to_promise(async move {
         // TODO: Reuse effect memory
         loop {
@@ -85,9 +85,13 @@ pub fn create_effect(callback: impl FnMut()) {
     });
 }
 
+thread_local! {
+    static SLOT_MAP: SlotMap = const { SlotMap::new() };
+}
+
 struct SlotMap {
-    slots: Vec<Slot>,
-    head: u32,
+    slots: Vec<SlotContents>,
+    head: usize,
 }
 
 impl SlotMap {
@@ -97,91 +101,51 @@ impl SlotMap {
             head: 0,
         }
     }
-}
 
-struct SlotKey {
-    index: u32,
-    generation: u32,
+    pub fn insert<T>(&mut self, value: T) -> Slot {
+        let value = Box::new(value);
+        if self.head == self.slots.len() {
+            self.slots.push(SlotContents::Occupied {
+                references: 1,
+                contents: value,
+            });
+        }
+    }
+
+    pub fn remove_reference(&mut self, index: u32) {
+        let index = index as usize;
+        let slot = self.slots.get_mut(index).unwrap();
+        match slot {
+            SlotContents::Empty { next_empty } => todo!(),
+            SlotContents::Occupied {
+                references,
+                contents,
+            } => todo!(),
+        }
+    }
 }
 
 struct Slot {
-    generation: u32,
-    contents: ContentsUnion,
-}
-
-impl Slot {
-    const IS_FILLED_BIT: u32 = !(u32::MAX >> 1);
-
-    pub fn new_empty(generation: u32, next: u32) -> Self {
-        assert!(generation & Self::IS_FILLED_BIT == 0);
-        Self {
-            generation,
-            contents: ContentsUnion { empty: next },
-        }
-    }
-
-    pub fn new_filled(generation: u32, mut contents: Box<dyn Any>) -> Self {
-        assert!(generation & Self::IS_FILLED_BIT == 0);
-        Self {
-            generation: generation | Self::IS_FILLED_BIT,
-            contents: ContentsUnion {
-                filled: contents.as_mut() as *mut dyn Any,
-            },
-        }
-    }
-
-    pub fn contents(&self) -> Contents {
-        if self.generation & Self::IS_FILLED_BIT == 0 {
-            Contents::Empty(self.contents.empty)
-        } else {
-            Contents::Filled(self.contents.filled)
-        }
-    }
+    index: u32,
 }
 
 impl Drop for Slot {
     fn drop(&mut self) {
-        if self.generation & Self::IS_FILLED_BIT > 0 {
-            let filling = unsafe { Box::from_raw(self.contents.filled) };
-        }
+        SLOT_MAP.with(|slot_map| slot_map.remove_reference(self.index));
     }
 }
 
-enum Contents {
-    Empty(u32),
-    Filled(*mut dyn Any),
-}
-
-union ContentsUnion {
-    empty: u32,
-    filled: *mut dyn Any,
+enum SlotContents {
+    Empty {
+        next_empty: usize,
+    },
+    Occupied {
+        references: u64,
+        contents: Box<dyn Any>,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 struct Signal(SignalId);
 
 type SignalId = u32;
-
-pub fn create_signal<T>(value: T) -> (impl Fn() -> T, impl Fn(fn(T) -> T))
-where
-    T: Copy,
-{
-    let mut effects = vec![];
-    let value = Rc::new(Cell::new(value));
-    let get = {
-        let value = value.clone();
-        move || value.get()
-    };
-    let set = move |map: fn(T) -> T| {
-        value.set(map(value.get()));
-    };
-    (get, set)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_name() {}
-}
