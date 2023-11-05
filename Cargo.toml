@@ -21,6 +21,9 @@ features = [
     "Document",
     "Element",
     "HtmlElement",
+    "HtmlUListElement",
+    "HtmlInputElement",
+    "HtmlButtonElement",
 ]
 
 [dev-dependencies]
