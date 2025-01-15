@@ -54,6 +54,17 @@ type Children = &'static [Tag];
 
 pub struct Tag(S, Attributes, Children);
 
+// NOTE:
+// It seems that abstracting Tag with functions, even const ones, is ergonomically problematic.
+// Still possible if calls are wrapped with const{}, but that's not ideal. Probably macros are the
+// best chance for API ergonomics if sticking with this route.
+
+// NOTE:
+// As a follow-up, see if it's possible to flatten this structure into HTML fragments in const
+// context.
+
+// NOTE:
+// If this is looking viable, write up the recurse center application with this project as a plan.
 const fn api_test() -> Tag {
     Tag(
         "div",
