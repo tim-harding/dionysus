@@ -1,5 +1,6 @@
 use bevy_ecs::{
     prelude::{Component, Entity},
+    schedule::Schedule,
     system::Query,
     world::World,
 };
@@ -7,6 +8,11 @@ use dionysus::console;
 use std::panic;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{window, HtmlButtonElement, HtmlInputElement, HtmlUListElement};
+
+// NOTE:
+// Programming as if weak refs are available everywhere because it makes
+// programming easier. Don't have to worry about managing the lifetime of
+// callbacks for DOM elements.
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
@@ -37,10 +43,8 @@ fn main() {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
 
     let mut world = World::new();
-    world.spawn(Todo::new("Hello".to_string()));
-    world.spawn(Todo::new("world".to_string()));
-    world.spawn((Todo::new("things".to_string()), Completed));
-    world.spawn((Todo::new("stuff".to_string()), Completed));
+    let mut schedule = Schedule::default();
+    schedule.add_systems(display_todos);
 
     let window = window().unwrap();
     let document = window.document().unwrap();
@@ -62,10 +66,11 @@ fn main() {
         .dyn_into()
         .unwrap();
     button.set_text_content(Some("Create"));
+    let update_ul = Closure::<dyn FnMut()>::new(move || {});
     let closure = Closure::<dyn FnMut()>::new(move || {
         world.spawn(Todo::new(input.value()));
         input.set_value("");
-        console::log!("Hit");
+        schedule.run(&mut world);
     });
     button
         .add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())
