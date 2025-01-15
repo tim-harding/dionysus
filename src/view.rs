@@ -68,18 +68,22 @@ pub enum Child {
     Text,
 }
 
-pub struct Template {
-    tag: &'static str,
-    slots: &'static [Placeholder],
+pub struct Slot {
+    path: &'static [Breadcrumb],
+    kind: SlotKind,
 }
 
-pub struct Placeholder {
-    path: &'static [Breadcrumb],
+pub enum SlotKind {
+    Fragment(fn() -> Tag),
+    TextNode,
+    Property(&'static str),
+    Event(&'static str),
+    Binding,
 }
 
 pub enum Breadcrumb {
-    Child,
-    Sibling,
+    FirstChild,
+    NextSibling,
 }
 
 const fn api_test() -> Tag {
@@ -101,8 +105,35 @@ const fn api_test() -> Tag {
             Child::Tag(Tag(
                 "a",
                 &[Attribute::Static("href", "https://www.timharding.co/")],
-                &[Child::Text],
+                &[Child::TextStatic("Visit "), Child::Text],
             )),
         ],
     )
+}
+
+pub trait Template {
+    const TEXT: &str;
+    const SLOTS: &[Slot];
+}
+
+struct TemplateExample;
+
+impl Template for TemplateExample {
+    const TEXT: &str = "<div class='m-5 p-2' id='my-id'><a href='https://www.apple.com/'>Apple</a><a href='https://www.timharding.co/'></a></div>";
+
+    const SLOTS: &[Slot] = &[
+        Slot {
+            path: &[Breadcrumb::FirstChild],
+            kind: SlotKind::Property("id"),
+        },
+        Slot {
+            path: &[
+                Breadcrumb::FirstChild,
+                Breadcrumb::NextSibling,
+                Breadcrumb::FirstChild,
+                Breadcrumb::NextSibling,
+            ],
+            kind: SlotKind::TextNode,
+        },
+    ];
 }
