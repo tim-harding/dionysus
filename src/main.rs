@@ -18,10 +18,7 @@ use web_sys::{window, HtmlButtonElement, HtmlInputElement, HtmlUListElement};
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[derive(Component)]
-struct Completed;
-
-#[derive(Component)]
+#[derive(Debug, Component)]
 struct Todo {
     pub text: String,
 }
@@ -32,12 +29,10 @@ impl Todo {
     }
 }
 
-struct Reactive {
-    effects: Vec<Box<dyn FnMut()>>,
-}
-
 fn display_todos(query: Query<(Entity, &Todo)>) {
-    // for todo in query {}
+    for (_, todo) in query.iter() {
+        console::log!("{:?}", todo.text);
+    }
 }
 
 fn main() {
@@ -67,8 +62,8 @@ fn main() {
         .dyn_into()
         .unwrap();
     button.set_text_content(Some("Create"));
-    let update_ul = Closure::<dyn FnMut()>::new(move || {});
     let closure = Closure::<dyn FnMut()>::new(move || {
+        console::log!("Hello, closure");
         world.spawn(Todo::new(input.value()));
         input.set_value("");
         schedule.run(&mut world);
