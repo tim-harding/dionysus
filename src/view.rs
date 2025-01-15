@@ -20,13 +20,8 @@
 // DOM.
 
 // NOTE:
-// It seems that abstracting Tag with functions, even const ones, is ergonomically problematic.
-// Still possible if calls are wrapped with const{}, but that's not ideal. Probably macros are the
-// best chance for API ergonomics if sticking with this route.
-
-// NOTE:
-// As a follow-up, see if it's possible to flatten this structure into HTML fragments in const
-// context.
+// Initial tests indicate that const flattening the template is not viable. Try the multi-crate
+// option or macros instead.
 
 use bevy_ecs::prelude::*;
 use bevy_utils::synccell::SyncCell;
@@ -63,19 +58,23 @@ pub enum Attribute {
     Static(&'static str, &'static str),
     Property(&'static str),
     Event(&'static str),
-    Binding(Entity),
+    Binding,
 }
 
 pub enum Child {
     Tag(Tag),
+    Fragment(fn() -> Tag),
     TextStatic(&'static str),
     Text,
-    Fragment(fn() -> Tag),
 }
 
 pub struct Template {
     tag: &'static str,
-    slots: &'static [&'static [Breadcrumb]],
+    slots: &'static [Placeholder],
+}
+
+pub struct Placeholder {
+    path: &'static [Breadcrumb],
 }
 
 pub enum Breadcrumb {
