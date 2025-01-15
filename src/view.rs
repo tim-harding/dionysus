@@ -24,7 +24,7 @@ use bevy_utils::synccell::SyncCell;
 use web_sys::HtmlElement;
 
 #[derive(Component)]
-struct El(UnsafeElement);
+struct Element(UnsafeElement);
 
 /// A wrapper around [`HtmlElement`] that implements [`Send`] and [`Sync`]. This is okay in
 /// practice because WASM is only ever single-threaded, although this is something to pay attention
@@ -35,6 +35,8 @@ struct UnsafeElement(HtmlElement);
 unsafe impl Send for UnsafeElement {}
 unsafe impl Sync for UnsafeElement {}
 
+pub struct SignalId(u32);
+
 #[derive(Debug, Default)]
 pub struct Cult {
     world: World,
@@ -44,4 +46,21 @@ impl Cult {
     pub fn new() -> Self {
         Self::default()
     }
+}
+
+type S = &'static str;
+type Attributes = &'static [(S, S)];
+type Children = &'static [Tag];
+
+pub struct Tag(S, Attributes, Children);
+
+const fn api_test() -> Tag {
+    Tag(
+        "div",
+        &[("class", "m-5 p-2"), ("id", "my-id")],
+        &[
+            Tag("a", &[("href", "https://www.apple.com/")], &[]),
+            Tag("a", &[("href", "https://www.timharding.co/")], &[]),
+        ],
+    )
 }
