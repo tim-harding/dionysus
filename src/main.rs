@@ -1,10 +1,11 @@
+mod console;
+
 use bevy_ecs::{
     prelude::{Component, Entity},
     schedule::Schedule,
     system::Query,
     world::World,
 };
-use dionysus::console;
 use std::panic;
 use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{window, HtmlButtonElement, HtmlInputElement, HtmlUListElement};
