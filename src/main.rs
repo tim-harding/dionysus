@@ -1,4 +1,5 @@
 mod console;
+mod view;
 
 use bevy_ecs::{
     prelude::{Component, Entity},
