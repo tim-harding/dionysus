@@ -45,10 +45,34 @@ impl Cult {
 }
 
 type S = &'static str;
-type Attributes = &'static [(S, S)];
-type Children = &'static [Tag];
+type Attributes = &'static [Attribute];
+type Children = &'static [Child];
 
 pub struct Tag(S, Attributes, Children);
+
+pub enum Attribute {
+    Static(&'static str, &'static str),
+    Property(&'static str),
+    Event(&'static str),
+    Binding(Entity),
+}
+
+pub enum Child {
+    Tag(Tag),
+    TextStatic(&'static str),
+    Text,
+    Fragment(fn() -> Tag),
+}
+
+pub struct Template {
+    tag: &'static str,
+    slots: &'static [&'static [Breadcrumb]],
+}
+
+pub enum Breadcrumb {
+    Child,
+    Sibling,
+}
 
 // NOTE:
 // It seems that abstracting Tag with functions, even const ones, is ergonomically problematic.
@@ -59,15 +83,27 @@ pub struct Tag(S, Attributes, Children);
 // As a follow-up, see if it's possible to flatten this structure into HTML fragments in const
 // context.
 
-// NOTE:
-// If this is looking viable, write up the recurse center application with this project as a plan.
 const fn api_test() -> Tag {
     Tag(
         "div",
-        &[("class", "m-5 p-2"), ("id", "my-id")],
         &[
-            Tag("a", &[("href", "https://www.apple.com/")], &[]),
-            Tag("a", &[("href", "https://www.timharding.co/")], &[]),
+            Attribute::Static("class", "m-5 p-2"),
+            Attribute::Static("id", "my-id"),
+        ],
+        &[
+            Child::Tag(Tag(
+                "a",
+                &[
+                    Attribute::Static("href", "https://www.apple.com/"),
+                    Attribute::Property("id"),
+                ],
+                &[Child::TextStatic("Apple")],
+            )),
+            Child::Tag(Tag(
+                "a",
+                &[Attribute::Static("href", "https://www.timharding.co/")],
+                &[Child::Text],
+            )),
         ],
     )
 }
